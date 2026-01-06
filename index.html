@@ -78,6 +78,43 @@
       text-align:center;
     }
 
+    .cloud-status{
+      position:fixed;
+      top:20px; right:20px;
+      padding:10px 14px;
+      border-radius:12px;
+      background: rgba(15,26,46,.95);
+      border:1px solid rgba(234,240,255,.18);
+      font-size:12px;
+      font-weight:700;
+      box-shadow: var(--shadow);
+      z-index:1000;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .cloud-status.connected{
+      border-color: rgba(53,208,127,.35);
+      color:var(--ok);
+    }
+    .cloud-status.disconnected{
+      border-color: rgba(255,204,102,.35);
+      color:var(--warn);
+    }
+    .cloud-status .btn-mini{
+      padding:4px 8px;
+      font-size:11px;
+      background: rgba(234,240,255,.1);
+      border:1px solid rgba(234,240,255,.2);
+      border-radius:6px;
+      cursor:pointer;
+      color:var(--text);
+      font-weight:700;
+    }
+    .cloud-status .btn-mini:hover{
+      background: rgba(234,240,255,.15);
+    }
+
     .actions{
       display:flex; gap:10px; flex-wrap:wrap;
       margin:0 0 20px;
@@ -110,6 +147,11 @@
     }
     .btn:hover{transform: translateY(-1px)}
     .btn:active{transform: translateY(0)}
+    .btn:disabled{
+      opacity:.4;
+      cursor:not-allowed;
+      transform:none !important;
+    }
 
     .card{
       border-radius:var(--radius);
@@ -183,13 +225,6 @@
       padding:14px;
       margin-bottom:16px;
     }
-    .rating-scale h3{
-      margin:0 0 10px;
-      font-size:13px;
-      letter-spacing:.5px;
-      text-transform:uppercase;
-      color:var(--accent2);
-    }
     .rating-item{
       display:flex;
       gap:10px;
@@ -205,16 +240,6 @@
 
     .section{
       margin-bottom:20px;
-    }
-    .section-title{
-      font-size:15px;
-      font-weight:800;
-      letter-spacing:.5px;
-      text-transform:uppercase;
-      color:var(--accent2);
-      margin:0 0 12px;
-      padding:8px 0;
-      border-bottom:2px solid rgba(47,178,255,.3);
     }
 
     .eval-item{
@@ -379,7 +404,7 @@
       opacity:0;
       transition: opacity .3s;
       pointer-events:none;
-      z-index:1000;
+      z-index:999;
     }
     .save-indicator.show{opacity:1}
 
@@ -424,6 +449,7 @@
       gap:10px;
       justify-content:flex-end;
     }
+
     .version-list{
       list-style:none;
       margin:0;
@@ -472,13 +498,26 @@
       background: rgba(234,240,255,.1);
     }
 
+    .info-box{
+      background: rgba(47,178,255,.12);
+      border:1px solid rgba(47,178,255,.25);
+      border-radius:var(--radius2);
+      padding:14px;
+      margin-bottom:16px;
+      font-size:13px;
+      line-height:1.5;
+    }
+    .info-box strong{
+      color:var(--accent2);
+    }
+
     @media print {
       body{
         background: #ffffff !important;
         color:#111827 !important;
         padding:0 !important;
       }
-      .actions, .save-indicator{display:none !important;}
+      .actions, .save-indicator, .cloud-status{display:none !important;}
       .hero{
         border: 1px solid #e5e7eb !important;
         background: #fff3ee !important;
@@ -506,21 +545,27 @@
   </style>
 </head>
 <body>
+  <!-- Cloud Status Indicator -->
+  <div class="cloud-status disconnected" id="cloudStatus">
+    <span id="cloudStatusText">☁️ OneDrive: Not Setup</span>
+    <button class="btn-mini" onclick="setupOneDriveFolder()">Setup Folder</button>
+  </div>
+
   <div class="wrap">
 
     <div class="hero">
       <div class="hero-content">
         <h1 class="title">Performance Evaluation – Data/Imports Team</h1>
-        <p class="subtitle">Post-Implementation Assessment • Track growth over time • Build initiative-takers</p>
+        <p class="subtitle">Post-Implementation Assessment • Auto-backed up to OneDrive • Track growth over time</p>
       </div>
     </div>
 
     <div class="actions">
       <button class="btn primary" onclick="window.print()">📄 Print / PDF</button>
-      <button class="btn success" onclick="saveSnapshot()">💾 Save Snapshot</button>
-      <button class="btn" onclick="showVersionHistory()">📚 Version History</button>
+      <button class="btn success" onclick="saveToOneDrive()" id="saveCloudBtn">☁️ Save to OneDrive</button>
+      <button class="btn" onclick="browseOneDriveHistory()">📚 Browse OneDrive</button>
       <button class="btn warn" onclick="startNewEval()">🆕 New Evaluation</button>
-      <button class="btn" onclick="loadSnapshot()">📂 Load Snapshot</button>
+      <button class="btn" onclick="loadFromFile()">📂 Load File</button>
     </div>
 
     <!-- Basic Info -->
@@ -1184,31 +1229,13 @@
   <!-- Save indicator -->
   <div class="save-indicator" id="saveIndicator">✓ Saved</div>
 
-  <!-- Version History Modal -->
-  <div class="modal" id="versionModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>📚 Version History</h3>
-      </div>
-      <div class="modal-body">
-        <ul class="version-list" id="versionList"></ul>
-        <div id="noVersions" style="display:none; text-align:center; padding:40px 20px; color:var(--muted);">
-          <p>No saved evaluations yet.</p>
-          <p style="font-size:12px;">Click "Save Snapshot" to save your first evaluation.</p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn" onclick="closeModal()">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- File input for loading snapshots -->
+  <!-- File input for loading -->
   <input type="file" id="fileInput" accept=".json" style="display:none" onchange="handleFileLoad(event)">
 
   <script>
     let saveTimeout;
     const AUTOSAVE_DELAY = 1500;
+    let oneDriveFolderHandle = null;
 
     // All form field IDs
     const FORM_FIELDS = [
@@ -1233,6 +1260,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       loadState();
       setupAutoSave();
+      checkFolderAccess();
     });
 
     function setupAutoSave() {
@@ -1305,138 +1333,150 @@
       }
     }
 
-    function saveSnapshot() {
-      const employeeName = document.getElementById('employeeName').value || 'Unnamed';
-      const evalDate = document.getElementById('evaluationDate').value || 'NoDate';
-      const fileName = `${employeeName.replace(/[^a-z0-9]/gi, '-')}_${evalDate}`.toLowerCase();
+    async function setupOneDriveFolder() {
+      try {
+        // Request folder access
+        const handle = await window.showDirectoryPicker({
+          mode: 'readwrite',
+          startIn: 'documents'
+        });
+
+        // Store the folder handle
+        oneDriveFolderHandle = handle;
+        
+        // Persist permission
+        await handle.requestPermission({ mode: 'readwrite' });
+
+        // Update UI
+        updateCloudStatus('connected', `☁️ OneDrive: ${handle.name}`);
+
+        alert('✓ OneDrive folder connected!\n\nYour evaluations will now be saved to this folder automatically.');
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Failed to setup folder:', err);
+          alert('✕ Failed to setup OneDrive folder.\n\nMake sure you select your OneDrive folder:\nC:\\Users\\tmurphy\\OneDrive - bswift LLC');
+        }
+      }
+    }
+
+    async function checkFolderAccess() {
+      // Check if we have saved folder access (browser may remember it)
+      const savedFolderName = localStorage.getItem('oneDriveFolderName');
+      if (savedFolderName) {
+        updateCloudStatus('connected', `☁️ OneDrive: ${savedFolderName}`);
+      }
+    }
+
+    function updateCloudStatus(status, text) {
+      const statusEl = document.getElementById('cloudStatus');
+      const textEl = document.getElementById('cloudStatusText');
       
-      const snapshot = {
-        savedDate: new Date().toISOString(),
-        employeeName: employeeName,
-        evaluationDate: evalDate,
-        data: {}
-      };
+      statusEl.className = `cloud-status ${status}`;
+      textEl.textContent = text;
 
-      FORM_FIELDS.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) snapshot.data[id] = el.value;
-      });
-
-      CHECKBOX_FIELDS.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) snapshot.data[id] = el.checked;
-      });
-
-      const versions = getVersions();
-      versions.push(snapshot);
-      localStorage.setItem('dataEval_versions', JSON.stringify(versions));
-
-      const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `evaluation-${fileName}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      showSaveIndicator();
-      alert('✓ Evaluation saved!\n\nFile downloaded and added to version history.');
+      if (status === 'connected' && oneDriveFolderHandle) {
+        localStorage.setItem('oneDriveFolderName', oneDriveFolderHandle.name);
+      }
     }
 
-    function getVersions() {
-      const saved = localStorage.getItem('dataEval_versions');
-      return saved ? JSON.parse(saved) : [];
-    }
-
-    function showVersionHistory() {
-      const versions = getVersions();
-      const versionList = document.getElementById('versionList');
-      const noVersions = document.getElementById('noVersions');
-
-      if (versions.length === 0) {
-        versionList.innerHTML = '';
-        noVersions.style.display = 'block';
-      } else {
-        noVersions.style.display = 'none';
-        versionList.innerHTML = versions.reverse().map((v, i) => {
-          const actualIndex = versions.length - 1 - i;
-          const date = new Date(v.savedDate);
-          const name = v.employeeName || 'Unnamed';
-          const evalDate = v.evaluationDate || 'No date';
-          return `
-            <li class="version-item">
-              <div class="version-info">
-                <div class="version-name">${name} - ${evalDate}</div>
-                <div class="version-meta">Saved: ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}</div>
-              </div>
-              <div class="version-actions">
-                <button class="version-btn" onclick="loadVersion(${actualIndex})">Load</button>
-                <button class="version-btn" onclick="downloadVersion(${actualIndex})">Download</button>
-                <button class="version-btn" onclick="deleteVersion(${actualIndex})">Delete</button>
-              </div>
-            </li>
-          `;
-        }).join('');
+    async function saveToOneDrive() {
+      if (!oneDriveFolderHandle) {
+        const setup = confirm('OneDrive folder not setup yet.\n\nDo you want to select your OneDrive folder now?');
+        if (setup) {
+          await setupOneDriveFolder();
+          if (!oneDriveFolderHandle) return;
+        } else {
+          return;
+        }
       }
 
-      document.getElementById('versionModal').classList.add('show');
+      try {
+        const employeeName = document.getElementById('employeeName').value || 'Unnamed';
+        const evalDate = document.getElementById('evaluationDate').value || new Date().toISOString().split('T')[0];
+        const fileName = `evaluation-${employeeName.replace(/[^a-z0-9]/gi, '-')}_${evalDate}.json`.toLowerCase();
+        
+        const snapshot = {
+          savedDate: new Date().toISOString(),
+          employeeName: employeeName,
+          evaluationDate: evalDate,
+          data: {}
+        };
+
+        FORM_FIELDS.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) snapshot.data[id] = el.value;
+        });
+
+        CHECKBOX_FIELDS.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) snapshot.data[id] = el.checked;
+        });
+
+        // Create/overwrite file in OneDrive folder
+        const fileHandle = await oneDriveFolderHandle.getFileHandle(fileName, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(JSON.stringify(snapshot, null, 2));
+        await writable.close();
+
+        updateCloudStatus('connected', `☁️ Saved: ${fileName}`);
+        setTimeout(() => {
+          updateCloudStatus('connected', `☁️ OneDrive: ${oneDriveFolderHandle.name}`);
+        }, 3000);
+
+        alert('✓ Evaluation saved to OneDrive!\n\nFile: ' + fileName);
+      } catch (err) {
+        console.error('Failed to save to OneDrive:', err);
+        
+        if (err.name === 'NotAllowedError') {
+          oneDriveFolderHandle = null;
+          updateCloudStatus('disconnected', '☁️ OneDrive: Permission Lost');
+          alert('✕ Permission denied.\n\nPlease click "Setup Folder" again to grant access.');
+        } else {
+          alert('✕ Failed to save to OneDrive.\n\nError: ' + err.message);
+        }
+      }
     }
 
-    function closeModal() {
-      document.getElementById('versionModal').classList.remove('show');
-    }
-
-    function loadVersion(index) {
-      const versions = getVersions();
-      const version = versions[index];
-      
-      if (!confirm(`Load evaluation for ${version.employeeName || 'this person'}?\n\nThis will replace your current content.`)) {
+    async function browseOneDriveHistory() {
+      if (!oneDriveFolderHandle) {
+        alert('⚠️ OneDrive folder not setup.\n\nClick "Setup Folder" first to select your OneDrive folder.');
         return;
       }
 
-      FORM_FIELDS.forEach(id => {
-        const el = document.getElementById(id);
-        if (el && version.data[id] !== undefined) el.value = version.data[id];
-      });
+      try {
+        const files = [];
+        for await (const entry of oneDriveFolderHandle.values()) {
+          if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+            files.push(entry);
+          }
+        }
 
-      CHECKBOX_FIELDS.forEach(id => {
-        const el = document.getElementById(id);
-        if (el && version.data[id] !== undefined) el.checked = version.data[id];
-      });
+        if (files.length === 0) {
+          alert('No evaluation files found in OneDrive folder.');
+          return;
+        }
 
-      saveState();
-      closeModal();
-      alert('✓ Evaluation loaded successfully!');
-    }
+        let message = `Found ${files.length} evaluation(s) in OneDrive:\n\n`;
+        files.sort((a, b) => b.name.localeCompare(a.name)); // Sort by name (newest first)
+        files.slice(0, 10).forEach((file, i) => {
+          message += `${i + 1}. ${file.name}\n`;
+        });
 
-    function downloadVersion(index) {
-      const versions = getVersions();
-      const version = versions[index];
-      const fileName = `${version.employeeName || 'unnamed'}_${version.evaluationDate || 'nodate'}`.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-      
-      const blob = new Blob([JSON.stringify(version, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `evaluation-${fileName}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
+        if (files.length > 10) {
+          message += `\n... and ${files.length - 10} more files`;
+        }
 
-    function deleteVersion(index) {
-      const versions = getVersions();
-      const version = versions[index];
-      
-      if (!confirm(`Delete evaluation for ${version.employeeName || 'this person'}?`)) {
-        return;
+        message += '\n\nUse "Load File" button or open files directly from:\n';
+        message += 'File Explorer → OneDrive → Team-Evaluations';
+
+        alert(message);
+      } catch (err) {
+        console.error('Failed to browse OneDrive:', err);
+        alert('✕ Failed to browse OneDrive folder.\n\nError: ' + err.message);
       }
-
-      versions.splice(index, 1);
-      localStorage.setItem('dataEval_versions', JSON.stringify(versions));
-      showVersionHistory();
     }
 
-    function loadSnapshot() {
+    function loadFromFile() {
       document.getElementById('fileInput').click();
     }
 
@@ -1475,30 +1515,9 @@
     }
 
     function startNewEval() {
-      if (!confirm('Start a new evaluation?\n\nCurrent content will be saved to version history, and the form will be cleared.')) {
+      if (!confirm('Start a new evaluation?\n\nCurrent content will be cleared. Make sure you saved first!')) {
         return;
       }
-
-      const snapshot = {
-        savedDate: new Date().toISOString(),
-        employeeName: document.getElementById('employeeName').value,
-        evaluationDate: document.getElementById('evaluationDate').value,
-        data: {}
-      };
-
-      FORM_FIELDS.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) snapshot.data[id] = el.value;
-      });
-
-      CHECKBOX_FIELDS.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) snapshot.data[id] = el.checked;
-      });
-
-      const versions = getVersions();
-      versions.push(snapshot);
-      localStorage.setItem('dataEval_versions', JSON.stringify(versions));
 
       FORM_FIELDS.forEach(id => {
         const el = document.getElementById(id);
@@ -1513,7 +1532,6 @@
       document.getElementById('position').value = 'Data/Imports Analyst';
 
       saveState();
-      alert('✓ New evaluation started!\n\nPrevious content saved to version history.');
       window.scrollTo(0, 0);
     }
 
@@ -1526,10 +1544,6 @@
       }
       scheduleAutoSave();
     }
-
-    document.getElementById('versionModal').addEventListener('click', (e) => {
-      if (e.target.id === 'versionModal') closeModal();
-    });
   </script>
 </body>
 </html>
