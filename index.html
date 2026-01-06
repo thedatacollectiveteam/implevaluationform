@@ -1,0 +1,1535 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Data Team Implementation Evaluation</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#0f1a2e;
+      --text:#eaf0ff;
+      --muted: rgba(234,240,255,.72);
+      --line: rgba(234,240,255,.12);
+
+      --accent:#ff5a2a;
+      --accent2:#2fb2ff;
+
+      --ok:#35d07f;
+      --warn:#ffcc66;
+      --risk:#ff5a2a;
+
+      --shadow: 0 12px 40px rgba(0,0,0,.35);
+      --radius: 18px;
+      --radius2: 14px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--font);
+      background:
+        radial-gradient(900px 500px at 10% -10%, rgba(47,178,255,.18), transparent 60%),
+        radial-gradient(900px 500px at 90% 10%, rgba(255,90,42,.20), transparent 55%),
+        linear-gradient(180deg, #071022, var(--bg));
+      color:var(--text);
+      min-height:100vh;
+      padding-bottom:80px;
+    }
+
+    .wrap{max-width:1000px;margin:34px auto;padding:0 18px}
+    
+    .hero{
+      position:relative;
+      padding:28px 26px;
+      border-radius:var(--radius);
+      background: linear-gradient(180deg, rgba(255,90,42,.16), rgba(255,90,42,.06));
+      border:1px solid rgba(255,90,42,.28);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      margin-bottom:20px;
+    }
+    .hero:after{
+      content:"";
+      position:absolute; inset:-120px -160px auto auto;
+      width:320px; height:320px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,90,42,.90), rgba(255,90,42,.10) 70%, transparent 72%);
+      transform: rotate(12deg);
+      border-radius:50%;
+      opacity:.9;
+    }
+    .hero-content{
+      position:relative; z-index:1;
+    }
+    .title{
+      margin:0;
+      font-size:26px;
+      letter-spacing:.4px;
+      font-weight:800;
+      line-height:1.15;
+      text-align:center;
+    }
+    .subtitle{
+      margin:10px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      letter-spacing:.2px;
+      text-align:center;
+    }
+
+    .actions{
+      display:flex; gap:10px; flex-wrap:wrap;
+      margin:0 0 20px;
+    }
+    .btn{
+      appearance:none;
+      border:1px solid rgba(234,240,255,.18);
+      background: rgba(15,26,46,.55);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:700;
+      font-size:12.5px;
+      letter-spacing:.2px;
+      box-shadow: 0 10px 22px rgba(0,0,0,.22);
+      transition: transform .1s;
+    }
+    .btn.primary{
+      border-color: rgba(255,90,42,.35);
+      background: linear-gradient(180deg, rgba(255,90,42,.25), rgba(15,26,46,.55));
+    }
+    .btn.success{
+      border-color: rgba(53,208,127,.35);
+      background: linear-gradient(180deg, rgba(53,208,127,.25), rgba(15,26,46,.55));
+    }
+    .btn.warn{
+      border-color: rgba(255,204,102,.35);
+      background: linear-gradient(180deg, rgba(255,204,102,.25), rgba(15,26,46,.55));
+    }
+    .btn:hover{transform: translateY(-1px)}
+    .btn:active{transform: translateY(0)}
+
+    .card{
+      border-radius:var(--radius);
+      background: rgba(15,26,46,.78);
+      border:1px solid rgba(234,240,255,.10);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      margin-bottom:16px;
+      overflow:hidden;
+    }
+    .card-h{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 18px;
+      border-bottom:1px solid var(--line);
+      background: linear-gradient(90deg, rgba(47,178,255,.12), transparent 55%);
+    }
+    .card-h h2{
+      margin:0;
+      font-size:14px;
+      letter-spacing:.7px;
+      text-transform:uppercase;
+      font-weight:800;
+    }
+    .card-b{padding:18px}
+
+    .form-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+      margin-bottom:16px;
+    }
+    @media (max-width: 768px){
+      .form-grid{grid-template-columns:1fr}
+    }
+
+    .form-group{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .form-group label{
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.3px;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    .form-group input, .form-group textarea, .form-group select{
+      background: rgba(7,16,34,.45);
+      border:1px solid rgba(234,240,255,.14);
+      border-radius:10px;
+      padding:10px 12px;
+      color:var(--text);
+      font-family:var(--font);
+      font-size:14px;
+      transition: border-color .2s, background .2s;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus{
+      outline:none;
+      border-color: rgba(255,90,42,.4);
+      background: rgba(7,16,34,.65);
+    }
+    .form-group textarea{
+      resize:vertical;
+      min-height:60px;
+    }
+
+    .rating-scale{
+      background: rgba(7,16,34,.45);
+      border:1px solid rgba(234,240,255,.10);
+      border-radius:var(--radius2);
+      padding:14px;
+      margin-bottom:16px;
+    }
+    .rating-scale h3{
+      margin:0 0 10px;
+      font-size:13px;
+      letter-spacing:.5px;
+      text-transform:uppercase;
+      color:var(--accent2);
+    }
+    .rating-item{
+      display:flex;
+      gap:10px;
+      padding:6px 0;
+      font-size:12.5px;
+      line-height:1.4;
+    }
+    .rating-num{
+      font-weight:800;
+      min-width:22px;
+      color:var(--accent2);
+    }
+
+    .section{
+      margin-bottom:20px;
+    }
+    .section-title{
+      font-size:15px;
+      font-weight:800;
+      letter-spacing:.5px;
+      text-transform:uppercase;
+      color:var(--accent2);
+      margin:0 0 12px;
+      padding:8px 0;
+      border-bottom:2px solid rgba(47,178,255,.3);
+    }
+
+    .eval-item{
+      background: rgba(7,16,34,.45);
+      border:1px solid rgba(234,240,255,.10);
+      border-radius:var(--radius2);
+      padding:14px;
+      margin-bottom:12px;
+    }
+    .eval-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      margin-bottom:8px;
+      flex-wrap:wrap;
+    }
+    .eval-title{
+      font-weight:800;
+      font-size:14px;
+      margin:0;
+    }
+    .eval-desc{
+      font-size:12.5px;
+      color:var(--muted);
+      line-height:1.5;
+      margin:8px 0 10px;
+    }
+    .eval-rating{
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .eval-rating label{
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.5px;
+      font-weight:700;
+      color:var(--muted);
+    }
+    .eval-rating select{
+      background: rgba(15,26,46,.55);
+      border:1px solid rgba(234,240,255,.14);
+      border-radius:8px;
+      padding:6px 10px;
+      color:var(--text);
+      font-size:13px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .eval-rating select:focus{
+      outline:none;
+      border-color: rgba(255,90,42,.4);
+    }
+
+    .comments-box{
+      margin-top:10px;
+    }
+    .comments-box label{
+      display:block;
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.4px;
+      font-weight:700;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    .comments-box textarea{
+      width:100%;
+      background: rgba(15,26,46,.55);
+      border:1px solid rgba(234,240,255,.14);
+      border-radius:10px;
+      padding:10px 12px;
+      color:var(--text);
+      font-family:var(--font);
+      font-size:13px;
+      min-height:70px;
+      resize:vertical;
+    }
+    .comments-box textarea:focus{
+      outline:none;
+      border-color: rgba(255,90,42,.4);
+      background: rgba(15,26,46,.75);
+    }
+
+    .list-input-group{
+      margin-bottom:16px;
+    }
+    .list-input-group h4{
+      font-size:13px;
+      text-transform:uppercase;
+      letter-spacing:.4px;
+      font-weight:800;
+      color:var(--text);
+      margin:0 0 10px;
+    }
+    .list-input{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      margin-bottom:8px;
+    }
+    .list-input span{
+      font-weight:800;
+      font-size:13px;
+      min-width:18px;
+      color:var(--accent2);
+    }
+    .list-input input{
+      flex:1;
+      background: rgba(7,16,34,.45);
+      border:1px solid rgba(234,240,255,.14);
+      border-radius:8px;
+      padding:8px 10px;
+      color:var(--text);
+      font-size:13px;
+    }
+    .list-input input:focus{
+      outline:none;
+      border-color: rgba(255,90,42,.4);
+    }
+
+    .checkbox-group{
+      margin-bottom:16px;
+    }
+    .checkbox-group h4{
+      font-size:13px;
+      text-transform:uppercase;
+      letter-spacing:.4px;
+      font-weight:800;
+      color:var(--text);
+      margin:0 0 10px;
+    }
+    .checkbox-option{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 0;
+    }
+    .checkbox-option input[type="checkbox"]{
+      width:18px;
+      height:18px;
+      cursor:pointer;
+    }
+    .checkbox-option label{
+      font-size:13px;
+      color:var(--text);
+      cursor:pointer;
+    }
+
+    .save-indicator{
+      position:fixed;
+      bottom:20px; right:20px;
+      padding:10px 14px;
+      border-radius:12px;
+      background: rgba(15,26,46,.95);
+      border:1px solid rgba(234,240,255,.18);
+      font-size:12px;
+      font-weight:700;
+      color:var(--ok);
+      box-shadow: var(--shadow);
+      opacity:0;
+      transition: opacity .3s;
+      pointer-events:none;
+      z-index:1000;
+    }
+    .save-indicator.show{opacity:1}
+
+    .modal{
+      position:fixed;
+      inset:0;
+      background: rgba(7,16,34,.85);
+      backdrop-filter: blur(8px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:2000;
+      padding:20px;
+    }
+    .modal.show{display:flex}
+    .modal-content{
+      background: var(--card);
+      border:1px solid rgba(234,240,255,.18);
+      border-radius:var(--radius);
+      max-width:700px;
+      width:100%;
+      max-height:85vh;
+      overflow-y:auto;
+      box-shadow: var(--shadow);
+    }
+    .modal-header{
+      padding:20px;
+      border-bottom:1px solid var(--line);
+    }
+    .modal-header h3{
+      margin:0;
+      font-size:18px;
+      letter-spacing:.3px;
+    }
+    .modal-body{
+      padding:20px;
+    }
+    .modal-footer{
+      padding:16px 20px;
+      border-top:1px solid var(--line);
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+    }
+    .version-list{
+      list-style:none;
+      margin:0;
+      padding:0;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .version-item{
+      background: rgba(7,16,34,.45);
+      border:1px solid rgba(234,240,255,.10);
+      border-radius:var(--radius2);
+      padding:12px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+    .version-info{
+      flex:1;
+    }
+    .version-name{
+      font-weight:800;
+      font-size:14px;
+      margin-bottom:4px;
+    }
+    .version-meta{
+      font-size:12px;
+      color:var(--muted);
+    }
+    .version-actions{
+      display:flex;
+      gap:6px;
+    }
+    .version-btn{
+      padding:6px 10px;
+      font-size:11px;
+      border-radius:8px;
+      border:1px solid rgba(234,240,255,.14);
+      background: rgba(15,26,46,.55);
+      color:var(--text);
+      cursor:pointer;
+      font-weight:700;
+    }
+    .version-btn:hover{
+      background: rgba(234,240,255,.1);
+    }
+
+    @media print {
+      body{
+        background: #ffffff !important;
+        color:#111827 !important;
+        padding:0 !important;
+      }
+      .actions, .save-indicator{display:none !important;}
+      .hero{
+        border: 1px solid #e5e7eb !important;
+        background: #fff3ee !important;
+      }
+      .hero:after{display:none !important;}
+      .card{
+        background:#ffffff !important;
+        border: 1px solid #e5e7eb !important;
+        page-break-inside: avoid;
+      }
+      .card-h{
+        background: #f3f4f6 !important;
+        border-bottom: 1px solid #e5e7eb !important;
+      }
+      .eval-item{
+        background:#ffffff !important;
+        border: 1px solid #e5e7eb !important;
+      }
+      input, textarea, select{
+        border: 1px solid #e5e7eb !important;
+        background:#ffffff !important;
+        color:#111827 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <div class="hero">
+      <div class="hero-content">
+        <h1 class="title">Performance Evaluation – Data/Imports Team</h1>
+        <p class="subtitle">Post-Implementation Assessment • Track growth over time • Build initiative-takers</p>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" onclick="window.print()">📄 Print / PDF</button>
+      <button class="btn success" onclick="saveSnapshot()">💾 Save Snapshot</button>
+      <button class="btn" onclick="showVersionHistory()">📚 Version History</button>
+      <button class="btn warn" onclick="startNewEval()">🆕 New Evaluation</button>
+      <button class="btn" onclick="loadSnapshot()">📂 Load Snapshot</button>
+    </div>
+
+    <!-- Basic Info -->
+    <div class="card">
+      <div class="card-h">
+        <h2>📋 Basic Information</h2>
+      </div>
+      <div class="card-b">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Employee Name</label>
+            <input type="text" id="employeeName" placeholder="Full name">
+          </div>
+          <div class="form-group">
+            <label>Position</label>
+            <input type="text" id="position" value="Data/Imports Analyst">
+          </div>
+          <div class="form-group">
+            <label>Evaluator Name</label>
+            <input type="text" id="evaluatorName" placeholder="Your name">
+          </div>
+          <div class="form-group">
+            <label>Evaluation Date</label>
+            <input type="date" id="evaluationDate">
+          </div>
+          <div class="form-group">
+            <label>Evaluation Period / Project</label>
+            <input type="text" id="evaluationPeriod" placeholder="e.g., Q4 2025 or Client XYZ Implementation">
+          </div>
+          <div class="form-group">
+            <label>Project Complexity</label>
+            <select id="projectComplexity">
+              <option value="">Select complexity</option>
+              <option value="1">1 - Low Complexity</option>
+              <option value="2">2 - Medium Complexity</option>
+              <option value="3">3 - High Complexity</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Initial Evaluation? (Baseline)</label>
+          <input type="text" id="isBaseline" placeholder="Yes/No or leave blank">
+        </div>
+      </div>
+    </div>
+
+    <!-- Rating Scale -->
+    <div class="card">
+      <div class="card-h">
+        <h2>📊 Rating Scale Reference</h2>
+      </div>
+      <div class="card-b">
+        <div class="rating-scale">
+          <div class="rating-item">
+            <span class="rating-num">5</span>
+            <span><strong>Exceeds Expectations</strong> - Consistently performs above role requirements</span>
+          </div>
+          <div class="rating-item">
+            <span class="rating-num">4</span>
+            <span><strong>Meets Expectations+</strong> - Regularly performs above standard</span>
+          </div>
+          <div class="rating-item">
+            <span class="rating-num">3</span>
+            <span><strong>Meets Expectations</strong> - Consistently meets job requirements</span>
+          </div>
+          <div class="rating-item">
+            <span class="rating-num">2</span>
+            <span><strong>Below Expectations</strong> - Needs improvement in key areas</span>
+          </div>
+          <div class="rating-item">
+            <span class="rating-num">1</span>
+            <span><strong>Does Not Meet Expectations</strong> - Requires significant improvement</span>
+          </div>
+          <div class="rating-item">
+            <span class="rating-num">N/A</span>
+            <span><strong>Not Applicable/Not Observed</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- I. Technical Skills -->
+    <div class="card">
+      <div class="card-h">
+        <h2>I. Technical Skills</h2>
+      </div>
+      <div class="card-b">
+        <div class="section">
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">A. SQL Proficiency</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_sql" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Writes efficient SQL queries, understands database structure, uses appropriate filters, troubleshoots performance, runs audit procedures</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_sql"></textarea>
+            </div>
+          </div>
+
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">B. Demographic Import Process</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_import" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Creates formatted files, conducts file audits, imports correctly, interprets results, resolves errors</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_import"></textarea>
+            </div>
+          </div>
+
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">C. Mapper Knowledge & Data Transformation</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_mapper" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Understands IF/THEN logic, builds accurate mappers, transforms data correctly, tests thoroughly</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_mapper"></textarea>
+            </div>
+          </div>
+
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">D. Excel Proficiency</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_excel" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Uses Excel efficiently, creates formulas, uses conditional formatting and pivot tables, works with large datasets</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_excel"></textarea>
+            </div>
+          </div>
+
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">E. Understanding of bswift System & Imports 2.0</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_bswift" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Understands data structure, field requirements, benefit concepts, navigates portal confidently, understands data flow</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_bswift"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- II. Quality & Accuracy -->
+    <div class="card">
+      <div class="card-h">
+        <h2>II. Quality & Accuracy</h2>
+      </div>
+      <div class="card-b">
+        <div class="section">
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">A. Attention to Detail</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_detail" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Catches data issues, produces error-free work, reviews thoroughly, follows procedures, minimal rework</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_detail"></textarea>
+            </div>
+          </div>
+
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">B. Data Quality Standards</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_quality" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Maintains high standards, identifies issues proactively, validates results, runs audit reports, documents findings</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_quality"></textarea>
+            </div>
+          </div>
+
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">C. Error Prevention & Resolution</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_error" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Anticipates issues, resolves errors quickly, learns from mistakes, escalates appropriately, tests in QA first</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_error"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- III. Productivity & Efficiency -->
+    <div class="card">
+      <div class="card-h">
+        <h2>III. Productivity & Efficiency</h2>
+      </div>
+      <div class="card-b">
+        <div class="section">
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">A. Speed & Throughput</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_speed" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Completes work in reasonable timeframes, handles appropriate volume, works efficiently, meets deadlines, manages time well</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_speed"></textarea>
+            </div>
+          </div>
+
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">B. Independence & Self-Sufficiency</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_independence" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Works independently, researches before asking, makes sound decisions, knows when to escalate, uses resources effectively</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_independence"></textarea>
+            </div>
+          </div>
+
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">C. Problem-Solving & Critical Thinking</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_problemsolving" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Diagnoses root causes, develops creative solutions, thinks through implications, uses logical troubleshooting, handles unexpected situations</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_problemsolving"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IV. Communication & Collaboration -->
+    <div class="card">
+      <div class="card-h">
+        <h2>IV. Communication & Collaboration</h2>
+      </div>
+      <div class="card-b">
+        <div class="section">
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">A. Written Communication</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_written" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Writes clearly, explains technical concepts well, documents thoroughly, provides status updates, professional formatting</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_written"></textarea>
+            </div>
+          </div>
+
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">B. Verbal Communication</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_verbal" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Communicates clearly, asks clarifying questions, explains issues effectively, listens actively, presents information well</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_verbal"></textarea>
+            </div>
+          </div>
+
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">C. Team Collaboration</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_collaboration" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Works well with team, helps colleagues, shares knowledge, accepts feedback, contributes to positive culture</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_collaboration"></textarea>
+            </div>
+          </div>
+
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">D. Responsiveness</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_responsiveness" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Responds timely, follows up on tasks, keeps stakeholders informed, escalates blockers, available during work hours</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_responsiveness"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- V. Professionalism & Work Habits -->
+    <div class="card">
+      <div class="card-h">
+        <h2>V. Professionalism & Work Habits</h2>
+      </div>
+      <div class="card-b">
+        <div class="section">
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">A. Reliability & Dependability</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_reliability" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Present and punctual, follows through, delivers quality work, maintains consistent schedule, meets deadlines</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_reliability"></textarea>
+            </div>
+          </div>
+
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">B. Initiative & Ownership</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_initiative" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Takes ownership, identifies improvements, goes beyond minimum, suggests enhancements, shows enthusiasm</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_initiative"></textarea>
+            </div>
+          </div>
+
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">C. Adaptability & Learning Agility</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_adaptability" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Learns quickly, adapts to changes, applies feedback, handles criticism professionally, shows continuous improvement</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_adaptability"></textarea>
+            </div>
+          </div>
+
+          <div class="eval-item">
+            <div class="eval-header">
+              <h3 class="eval-title">D. Professionalism & Judgment</h3>
+              <div class="eval-rating">
+                <label>Rating:</label>
+                <select id="rating_professionalism" class="rating-select">
+                  <option value="">-</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+            </div>
+            <p class="eval-desc">Maintains professional demeanor, exercises good judgment, handles confidential info appropriately, represents team well, adheres to policies</p>
+            <div class="comments-box">
+              <label>Comments:</label>
+              <textarea id="comments_professionalism"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VI. Overall Performance Summary -->
+    <div class="card">
+      <div class="card-h">
+        <h2>VI. Overall Performance Summary</h2>
+      </div>
+      <div class="card-b">
+        <div class="form-group" style="margin-bottom:20px;">
+          <label>Overall Rating</label>
+          <select id="overallRating">
+            <option value="">-</option>
+            <option value="5">5 - Exceeds Expectations</option>
+            <option value="4">4 - Meets Expectations+</option>
+            <option value="3">3 - Meets Expectations</option>
+            <option value="2">2 - Below Expectations</option>
+            <option value="1">1 - Does Not Meet Expectations</option>
+          </select>
+        </div>
+
+        <div class="list-input-group">
+          <h4>Key Strengths (3-5 areas where they excelled):</h4>
+          <div class="list-input"><span>1.</span><input type="text" id="strength1"></div>
+          <div class="list-input"><span>2.</span><input type="text" id="strength2"></div>
+          <div class="list-input"><span>3.</span><input type="text" id="strength3"></div>
+          <div class="list-input"><span>4.</span><input type="text" id="strength4"></div>
+          <div class="list-input"><span>5.</span><input type="text" id="strength5"></div>
+        </div>
+
+        <div class="list-input-group">
+          <h4>Areas for Development (2-4 areas for improvement):</h4>
+          <div class="list-input"><span>1.</span><input type="text" id="development1"></div>
+          <div class="list-input"><span>2.</span><input type="text" id="development2"></div>
+          <div class="list-input"><span>3.</span><input type="text" id="development3"></div>
+          <div class="list-input"><span>4.</span><input type="text" id="development4"></div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>Notable Accomplishments</label>
+          <textarea id="accomplishments" rows="4"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Concerns or Issues</label>
+          <textarea id="concerns" rows="4"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- VII. FTE Conversion Recommendation -->
+    <div class="card">
+      <div class="card-h">
+        <h2>VII. Contractor FTE Conversion Recommendation</h2>
+      </div>
+      <div class="card-b">
+        <div class="checkbox-group">
+          <h4>Recommendation (Check one):</h4>
+          <div class="checkbox-option">
+            <input type="checkbox" id="rec_exceptional" name="recommendation" onchange="handleRecommendationChange(this)">
+            <label for="rec_exceptional">Exceptional performer, valuable long-term addition</label>
+          </div>
+          <div class="checkbox-option">
+            <input type="checkbox" id="rec_solid" name="recommendation" onchange="handleRecommendationChange(this)">
+            <label for="rec_solid">Solid performer who meets requirements</label>
+          </div>
+          <div class="checkbox-option">
+            <input type="checkbox" id="rec_concerns" name="recommendation" onchange="handleRecommendationChange(this)">
+            <label for="rec_concerns">Some concerns but potential with support</label>
+          </div>
+          <div class="checkbox-option">
+            <input type="checkbox" id="rec_notmeet" name="recommendation" onchange="handleRecommendationChange(this)">
+            <label for="rec_notmeet">Performance does not meet standards</label>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>Justification for Recommendation</label>
+          <textarea id="justification" rows="4"></textarea>
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>Conditions or Development Plan (if applicable)</label>
+          <textarea id="developmentPlan" rows="4"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Additional Notes</label>
+          <textarea id="additionalNotes" rows="4"></textarea>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Save indicator -->
+  <div class="save-indicator" id="saveIndicator">✓ Saved</div>
+
+  <!-- Version History Modal -->
+  <div class="modal" id="versionModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>📚 Version History</h3>
+      </div>
+      <div class="modal-body">
+        <ul class="version-list" id="versionList"></ul>
+        <div id="noVersions" style="display:none; text-align:center; padding:40px 20px; color:var(--muted);">
+          <p>No saved evaluations yet.</p>
+          <p style="font-size:12px;">Click "Save Snapshot" to save your first evaluation.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- File input for loading snapshots -->
+  <input type="file" id="fileInput" accept=".json" style="display:none" onchange="handleFileLoad(event)">
+
+  <script>
+    let saveTimeout;
+    const AUTOSAVE_DELAY = 1500;
+
+    // All form field IDs
+    const FORM_FIELDS = [
+      'employeeName', 'position', 'evaluatorName', 'evaluationDate', 'evaluationPeriod', 
+      'projectComplexity', 'isBaseline',
+      'rating_sql', 'comments_sql', 'rating_import', 'comments_import', 'rating_mapper', 
+      'comments_mapper', 'rating_excel', 'comments_excel', 'rating_bswift', 'comments_bswift',
+      'rating_detail', 'comments_detail', 'rating_quality', 'comments_quality', 'rating_error', 
+      'comments_error', 'rating_speed', 'comments_speed', 'rating_independence', 'comments_independence',
+      'rating_problemsolving', 'comments_problemsolving', 'rating_written', 'comments_written',
+      'rating_verbal', 'comments_verbal', 'rating_collaboration', 'comments_collaboration',
+      'rating_responsiveness', 'comments_responsiveness', 'rating_reliability', 'comments_reliability',
+      'rating_initiative', 'comments_initiative', 'rating_adaptability', 'comments_adaptability',
+      'rating_professionalism', 'comments_professionalism', 'overallRating',
+      'strength1', 'strength2', 'strength3', 'strength4', 'strength5',
+      'development1', 'development2', 'development3', 'development4',
+      'accomplishments', 'concerns', 'justification', 'developmentPlan', 'additionalNotes'
+    ];
+
+    const CHECKBOX_FIELDS = ['rec_exceptional', 'rec_solid', 'rec_concerns', 'rec_notmeet'];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      setupAutoSave();
+    });
+
+    function setupAutoSave() {
+      FORM_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('input', scheduleAutoSave);
+          el.addEventListener('change', scheduleAutoSave);
+        }
+      });
+
+      CHECKBOX_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('change', scheduleAutoSave);
+        }
+      });
+    }
+
+    function scheduleAutoSave() {
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => {
+        saveState();
+        showSaveIndicator();
+      }, AUTOSAVE_DELAY);
+    }
+
+    function showSaveIndicator() {
+      const indicator = document.getElementById('saveIndicator');
+      indicator.classList.add('show');
+      setTimeout(() => indicator.classList.remove('show'), 2000);
+    }
+
+    function saveState() {
+      const state = {
+        timestamp: new Date().toISOString(),
+        data: {}
+      };
+
+      FORM_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) state.data[id] = el.value;
+      });
+
+      CHECKBOX_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) state.data[id] = el.checked;
+      });
+
+      localStorage.setItem('dataEval_current', JSON.stringify(state));
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem('dataEval_current');
+      if (!saved) return;
+
+      try {
+        const state = JSON.parse(saved);
+        FORM_FIELDS.forEach(id => {
+          const el = document.getElementById(id);
+          if (el && state.data[id] !== undefined) el.value = state.data[id];
+        });
+
+        CHECKBOX_FIELDS.forEach(id => {
+          const el = document.getElementById(id);
+          if (el && state.data[id] !== undefined) el.checked = state.data[id];
+        });
+      } catch (e) {
+        console.error('Failed to load saved state:', e);
+      }
+    }
+
+    function saveSnapshot() {
+      const employeeName = document.getElementById('employeeName').value || 'Unnamed';
+      const evalDate = document.getElementById('evaluationDate').value || 'NoDate';
+      const fileName = `${employeeName.replace(/[^a-z0-9]/gi, '-')}_${evalDate}`.toLowerCase();
+      
+      const snapshot = {
+        savedDate: new Date().toISOString(),
+        employeeName: employeeName,
+        evaluationDate: evalDate,
+        data: {}
+      };
+
+      FORM_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) snapshot.data[id] = el.value;
+      });
+
+      CHECKBOX_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) snapshot.data[id] = el.checked;
+      });
+
+      const versions = getVersions();
+      versions.push(snapshot);
+      localStorage.setItem('dataEval_versions', JSON.stringify(versions));
+
+      const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `evaluation-${fileName}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      showSaveIndicator();
+      alert('✓ Evaluation saved!\n\nFile downloaded and added to version history.');
+    }
+
+    function getVersions() {
+      const saved = localStorage.getItem('dataEval_versions');
+      return saved ? JSON.parse(saved) : [];
+    }
+
+    function showVersionHistory() {
+      const versions = getVersions();
+      const versionList = document.getElementById('versionList');
+      const noVersions = document.getElementById('noVersions');
+
+      if (versions.length === 0) {
+        versionList.innerHTML = '';
+        noVersions.style.display = 'block';
+      } else {
+        noVersions.style.display = 'none';
+        versionList.innerHTML = versions.reverse().map((v, i) => {
+          const actualIndex = versions.length - 1 - i;
+          const date = new Date(v.savedDate);
+          const name = v.employeeName || 'Unnamed';
+          const evalDate = v.evaluationDate || 'No date';
+          return `
+            <li class="version-item">
+              <div class="version-info">
+                <div class="version-name">${name} - ${evalDate}</div>
+                <div class="version-meta">Saved: ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}</div>
+              </div>
+              <div class="version-actions">
+                <button class="version-btn" onclick="loadVersion(${actualIndex})">Load</button>
+                <button class="version-btn" onclick="downloadVersion(${actualIndex})">Download</button>
+                <button class="version-btn" onclick="deleteVersion(${actualIndex})">Delete</button>
+              </div>
+            </li>
+          `;
+        }).join('');
+      }
+
+      document.getElementById('versionModal').classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('versionModal').classList.remove('show');
+    }
+
+    function loadVersion(index) {
+      const versions = getVersions();
+      const version = versions[index];
+      
+      if (!confirm(`Load evaluation for ${version.employeeName || 'this person'}?\n\nThis will replace your current content.`)) {
+        return;
+      }
+
+      FORM_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && version.data[id] !== undefined) el.value = version.data[id];
+      });
+
+      CHECKBOX_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && version.data[id] !== undefined) el.checked = version.data[id];
+      });
+
+      saveState();
+      closeModal();
+      alert('✓ Evaluation loaded successfully!');
+    }
+
+    function downloadVersion(index) {
+      const versions = getVersions();
+      const version = versions[index];
+      const fileName = `${version.employeeName || 'unnamed'}_${version.evaluationDate || 'nodate'}`.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      
+      const blob = new Blob([JSON.stringify(version, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `evaluation-${fileName}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function deleteVersion(index) {
+      const versions = getVersions();
+      const version = versions[index];
+      
+      if (!confirm(`Delete evaluation for ${version.employeeName || 'this person'}?`)) {
+        return;
+      }
+
+      versions.splice(index, 1);
+      localStorage.setItem('dataEval_versions', JSON.stringify(versions));
+      showVersionHistory();
+    }
+
+    function loadSnapshot() {
+      document.getElementById('fileInput').click();
+    }
+
+    function handleFileLoad(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const snapshot = JSON.parse(e.target.result);
+          
+          if (!confirm(`Load evaluation for ${snapshot.employeeName || 'this person'}?\n\nThis will replace your current content.`)) {
+            return;
+          }
+
+          FORM_FIELDS.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && snapshot.data[id] !== undefined) el.value = snapshot.data[id];
+          });
+
+          CHECKBOX_FIELDS.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && snapshot.data[id] !== undefined) el.checked = snapshot.data[id];
+          });
+
+          saveState();
+          alert('✓ Evaluation loaded successfully!');
+        } catch (err) {
+          alert('✕ Failed to load evaluation. Invalid file format.');
+          console.error(err);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function startNewEval() {
+      if (!confirm('Start a new evaluation?\n\nCurrent content will be saved to version history, and the form will be cleared.')) {
+        return;
+      }
+
+      const snapshot = {
+        savedDate: new Date().toISOString(),
+        employeeName: document.getElementById('employeeName').value,
+        evaluationDate: document.getElementById('evaluationDate').value,
+        data: {}
+      };
+
+      FORM_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) snapshot.data[id] = el.value;
+      });
+
+      CHECKBOX_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) snapshot.data[id] = el.checked;
+      });
+
+      const versions = getVersions();
+      versions.push(snapshot);
+      localStorage.setItem('dataEval_versions', JSON.stringify(versions));
+
+      FORM_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+
+      CHECKBOX_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.checked = false;
+      });
+
+      document.getElementById('position').value = 'Data/Imports Analyst';
+
+      saveState();
+      alert('✓ New evaluation started!\n\nPrevious content saved to version history.');
+      window.scrollTo(0, 0);
+    }
+
+    function handleRecommendationChange(checkbox) {
+      if (checkbox.checked) {
+        CHECKBOX_FIELDS.forEach(id => {
+          const el = document.getElementById(id);
+          if (el && el !== checkbox) el.checked = false;
+        });
+      }
+      scheduleAutoSave();
+    }
+
+    document.getElementById('versionModal').addEventListener('click', (e) => {
+      if (e.target.id === 'versionModal') closeModal();
+    });
+  </script>
+</body>
+</html>
